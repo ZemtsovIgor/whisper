@@ -8,11 +8,10 @@ from typing import List, Optional, Union
 import torch
 from tqdm import tqdm
 
-from .audio import load_audio, log_mel_spectrogram, pad_or_trim
-from .decoding import DecodingOptions, DecodingResult, decode, detect_language
-from .model import ModelDimensions, Whisper
-from .transcribe import transcribe
-from .version import __version__
+from audio import load_audio, log_mel_spectrogram, pad_or_trim
+from decoding import DecodingOptions, DecodingResult, decode, detect_language
+from model import ModelDimensions, Whisper
+from transcribe import transcribe
 
 _MODELS = {
     "tiny.en": "https://openaipublic.azureedge.net/main/whisper/models/d3dd57d32accea0b295c96e26691aa14d8822fac7d9d27d5dc00b4ca2826dd03/tiny.en.pt",
@@ -152,3 +151,20 @@ def load_model(
         model.set_alignment_heads(alignment_heads)
 
     return model.to(device)
+
+
+def load():
+    # fmt: off
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument("--model", default="small", choices=available_models(), help="name of the Whisper model to use")
+    parser.add_argument("--model_dir", type=str, default=None, help="the path to save model files; uses ~/.cache/whisper by default")
+    parser.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu", help="device to use for PyTorch inference")
+
+    args = parser.parse_args().__dict__
+    model_name: str = args.pop("model")
+    model_dir: str = args.pop("model_dir")
+    device: str = args.pop("device")
+
+    return load_model(model_name, device=device, download_root=model_dir)
+
+load()

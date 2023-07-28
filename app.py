@@ -1,4 +1,8 @@
+import os
+import argparse
 import numpy as np
+import torch
+import pyaudio
 
 from load import available_models, load_model
 from tokenizer import LANGUAGES, TO_LANGUAGE_CODE
@@ -8,11 +12,10 @@ from utils import (
     optional_int,
     str2bool,
 )
+from transcribe import transcribe
 
 
 def app():
-    from . import available_models
-
     # fmt: off
     parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument("audio", nargs="+", type=str, help="audio file(s) to transcribe")
@@ -85,6 +88,17 @@ def app():
     if args["max_line_count"] and not args["max_line_width"]:
         warnings.warn("--max_line_count has no effect without --max_line_width")
     writer_args = {arg: args.pop(arg) for arg in word_options}
+
+    p = pyaudio.PyAudio()
+
+    stream = p.open(
+        format=pyaudio.paInt16,
+        channels=1,
+        rate=16000,
+        input=True,
+        frames_per_buffer=3200,
+    )
+
     for audio_path in args.pop("audio"):
         result = transcribe(model, audio_path, temperature=temperature, **args)
         writer(result, audio_path, writer_args)
